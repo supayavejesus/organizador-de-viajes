@@ -8,9 +8,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.organizadordeviajes.ui.navigation.NavScreens
-import com.example.organizadordeviajes.ui.theme.OrganizadorDeViajesTheme
 import com.example.organizadordeviajes.viewmodels.PlaceViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -18,7 +17,7 @@ import com.example.organizadordeviajes.viewmodels.PlaceViewModel
 fun FormPlaceScreen(
     navController: NavController,
     tripId: String,
-    vm: PlaceViewModel
+    vm: PlaceViewModel = viewModel()
 ) {
     var nombre by remember { mutableStateOf(TextFieldValue("")) }
     var ciudad by remember { mutableStateOf(TextFieldValue("")) }
@@ -29,9 +28,7 @@ fun FormPlaceScreen(
     var precio by remember { mutableStateOf(TextFieldValue("")) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Agregar lugar") })
-        }
+        topBar = { TopAppBar(title = { Text("Agregar lugar") }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -46,80 +43,63 @@ fun FormPlaceScreen(
                 label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = ciudad,
                 onValueChange = { ciudad = it },
                 label = { Text("Ciudad") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = descripcion,
                 onValueChange = { descripcion = it },
                 label = { Text("Descripción (opcional)") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = imagenUrl,
                 onValueChange = { imagenUrl = it },
-                label = { Text("URL de imagen (opcional)") },
+                label = { Text("URL Imagen (opcional)") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = indicaciones,
                 onValueChange = { indicaciones = it },
                 label = { Text("Indicaciones (opcional)") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = tiempo,
                 onValueChange = { tiempo = it },
-                label = { Text("Tiempo estimado (ej. 2h, 1 día)") },
+                label = { Text("Tiempo estimado)") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = precio,
                 onValueChange = { precio = it },
-                label = { Text("Precio (ej. 100$ por persona)") },
+                label = { Text("Precio (opcional)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Botón Guardar
             Button(
                 onClick = {
+                    val idTrip = tripId.toIntOrNull()
+                    if (idTrip == null) {
+                        println("tripId inválido")
+                        return@Button
+                    }
                     if (nombre.text.isNotBlank() && ciudad.text.isNotBlank()) {
-
-                        // Detectar si solo tiene los campos mínimos
-                        val soloObligatorios =
-                            descripcion.text.isBlank() &&
-                                    imagenUrl.text.isBlank() &&
-                                    indicaciones.text.isBlank() &&
-                                    tiempo.text.isBlank() &&
-                                    precio.text.isBlank()
+                        val soloObligatorios = listOf(
+                            descripcion.text, imagenUrl.text,
+                            indicaciones.text, tiempo.text, precio.text
+                        ).all { it.isBlank() }
 
                         if (soloObligatorios) {
-                            // Crear con campos básicos
-                            vm.createPlaceBasic(
-                                nombre = nombre.text,
-                                ciudad = ciudad.text,
-                                tripId = tripId.toInt()
-                            ) { success ->
-                                if (success) {
-                                    println("Lugar básico creado correctamente")
-                                    navController.navigate("${NavScreens.PLACES.name}/$tripId")
-                                } else {
-                                    println("Error al crear lugar básico")
-                                }
+                            vm.createPlaceBasic(nombre.text, ciudad.text, idTrip) { ok ->
+                                if (ok) navController.navigate("${NavScreens.PLACES.name}/$tripId")
                             }
                         } else {
-                            // Crear con todos los campos
                             vm.createPlace(
                                 nombre = nombre.text,
                                 ciudad = ciudad.text,
@@ -128,32 +108,20 @@ fun FormPlaceScreen(
                                 indicaciones = indicaciones.text.ifBlank { null },
                                 tiempo = tiempo.text.ifBlank { null },
                                 precio = precio.text.ifBlank { null },
-                                tripId = tripId.toInt()
-                            ) { success ->
-                                if (success) {
-                                    println("Lugar completo creado correctamente")
-                                    navController.navigate("${NavScreens.PLACES.name}/$tripId")
-                                } else {
-                                    println("Error al crear lugar completo")
-                                }
+                                tripId = idTrip
+                            ) { ok ->
+                                if (ok) navController.navigate("${NavScreens.PLACES.name}/$tripId")
                             }
                         }
-                    } else {
-                        println("Campos obligatorios vacíos")
-                    }
+                    } else println("Campos obligatorios vacíos")
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Guardar lugar")
-            }
+            ) { Text("Guardar lugar") }
 
-            // Botón Cancelar
             OutlinedButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Cancelar")
-            }
+            ) { Text("Cancelar") }
         }
     }
 }
@@ -161,13 +129,5 @@ fun FormPlaceScreen(
 @Preview(showBackground = true)
 @Composable
 fun FormPlaceScreenPreview() {
-    OrganizadorDeViajesTheme {
-        val navController = rememberNavController()
-        val fakeViewModel = androidx.lifecycle.viewmodel.compose.viewModel<PlaceViewModel>()
-        FormPlaceScreen(
-            navController = navController,
-            tripId = "1",
-            vm = fakeViewModel
-        )
-    }
+
 }

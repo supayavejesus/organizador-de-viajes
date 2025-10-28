@@ -78,8 +78,7 @@ fun ListTripsScreen(
                         .fillMaxWidth()
                         .padding(8.dp),
                     onClick = {
-                        // TODO: navegar a la pantalla de lugares de este viaje
-                        // navController.navigate("places/${viaje.id}")
+                        navController.navigate("places/${viaje.id}")
                     }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {

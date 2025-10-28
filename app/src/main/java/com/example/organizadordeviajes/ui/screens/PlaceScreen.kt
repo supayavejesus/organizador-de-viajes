@@ -1,10 +1,11 @@
 package com.example.organizadordeviajes.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,13 +30,23 @@ fun PlaceScreen(
 ) {
     val lugares = vm.listPlaces
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(tripId) {
         vm.getPlacesByTrip(tripId.toInt())
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Lugares del viaje") })
+            TopAppBar(
+                title = { Text("Lugares del viaje") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+                    }
+                }
+            )
         },
         bottomBar = {
             Button(
@@ -48,8 +59,10 @@ fun PlaceScreen(
             ) {
                 Text("Agregar Lugar")
             }
+
         }
     ) { padding ->
+
         if (lugares.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -69,7 +82,14 @@ fun PlaceScreen(
                     PlaceCard(
                         place = place,
                         onClick = {
-                            navController.navigate("${NavScreens.DETAIL_PLACE.name}/${place.id}")
+                            val username = vm.currentUserName
+                            if (username.isNotBlank()) {
+                                navController.navigate(
+                                    "${NavScreens.DETAIL_PLACE.name}/$username/${place.id}"
+                                )
+                            } else {
+                                println("Error: usuario vacío en navegación")
+                            }
                         }
                     )
                 }

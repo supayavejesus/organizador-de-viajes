@@ -7,49 +7,37 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.example.organizadordeviajes.data.RetrofitInstance
-import com.example.organizadordeviajes.data.model.Place
 import com.example.organizadordeviajes.data.model.Trip
 import com.example.organizadordeviajes.ui.navigation.NavScreens
-import com.example.organizadordeviajes.viewmodels.PlaceViewModel
+import com.example.organizadordeviajes.viewmodels.TripViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailPlaceScreen(
+fun EditTripScreen(
     navController: NavController,
-    placeId: String,
+    tripId: String,
     currentUsername: String,
-    vm: PlaceViewModel
+    vm: TripViewModel
 ) {
-    var lugar by remember { mutableStateOf<Place?>(null) }
     var trip by remember { mutableStateOf<Trip?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(placeId) {
-        val id = placeId.toIntOrNull() ?: return@LaunchedEffect
+    LaunchedEffect(tripId) {
+        val id = tripId.toIntOrNull() ?: return@LaunchedEffect
 
         try {
-            val placeResponse = RetrofitInstance.api.getPlaceById(id)
-            if (placeResponse.isSuccessful) {
-                lugar = placeResponse.body()
-
-                val tripId = lugar?.idViaje
-                if (tripId != null) {
-                    val tripsResponse = RetrofitInstance.api.getTrips()
-                    if (tripsResponse.isSuccessful) {
-                        trip = tripsResponse.body()?.find { it.id == tripId }
-                    }
-                }
+            val response = RetrofitInstance.api.getTrips()
+            if (response.isSuccessful) {
+                trip = response.body()?.find { it.id == id }
             }
         } catch (e: Exception) {
-            println("Error cargando detalle: ${e.message}")
+            println("Error cargando detalle del viaje: ${e.message}")
         } finally {
             isLoading = false
         }
@@ -58,7 +46,7 @@ fun DetailPlaceScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalle del lugar") },
+                title = { Text("Detalle del viaje") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -80,19 +68,20 @@ fun DetailPlaceScreen(
                 }
             }
 
-            lugar == null -> {
+            trip == null -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Lugar no encontrado")
+                    Text("Viaje no encontrado")
                 }
             }
 
             else -> {
-                val isOwner = trip?.usuario?.trim()?.lowercase() ==
+                val currentTrip = trip!!
+                val isOwner = currentTrip.usuario?.trim()?.lowercase() ==
                         currentUsername.trim().lowercase()
 
                 Column(
@@ -102,51 +91,13 @@ fun DetailPlaceScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (!lugar!!.imagenUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = lugar!!.imagenUrl,
-                            contentDescription = lugar!!.nombre,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Sin imagen disponible", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-
                     Text(
-                        text = lugar!!.nombre ?: "Sin nombre",
+                        text = currentTrip.nombre ?: "Sin nombre",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = lugar!!.ciudad ?: "Ciudad no especificada",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    lugar!!.descripcion?.takeIf { it.isNotBlank() }?.let {
-                        Text(text = "Descripción: $it", style = MaterialTheme.typography.bodyMedium)
-                    }
-
-                    lugar!!.indicaciones?.takeIf { it.isNotBlank() }?.let {
-                        Text(text = "Indicaciones: $it", style = MaterialTheme.typography.bodyMedium)
-                    }
-
-                    lugar!!.tiempoEstimado?.takeIf { it.isNotBlank() }?.let {
-                        Text(text = "Tiempo estimado: $it", style = MaterialTheme.typography.bodyMedium)
-                    }
-
-                    lugar!!.precio?.takeIf { it.isNotBlank() }?.let {
-                        Text(text = "Precio: $it", style = MaterialTheme.typography.bodyMedium)
-                    }
+                    Text(text = "País: ${trip!!.pais}")
+                    Text(text = "Usuario: ${trip!!.usuario}")
 
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -162,35 +113,35 @@ fun DetailPlaceScreen(
                             Button(
                                 onClick = {
                                     navController.navigate(
-                                        "${NavScreens.EDIT_PLACE.name}/${lugar!!.id}"
+                                        "${NavScreens.EDIT_TRIP.name}/${trip!!.id}"
                                     )
                                 }
                             ) {
-                                Text("Editar lugar")
+                                Text("Editar viaje")
                             }
 
                             Button(
                                 onClick = {
-                                    vm.deletePlace(lugar!!.id ?: return@Button) { success ->
+                                    vm.deleteTrip(trip!!.id ?: return@Button) { success ->
                                         if (success) {
-                                            println("Lugar eliminado correctamente")
+                                            println("Viaje eliminado correctamente")
                                             navController.navigate(
-                                                "${NavScreens.PLACES.name}/${lugar!!.idViaje}"
+                                                "${NavScreens.LIST_TRIPS.name}/${currentUsername}"
                                             )
                                         } else {
-                                            println("Error al eliminar lugar")
+                                            println("Error al eliminar viaje")
                                         }
                                     }
                                 }
                             ) {
-                                Text("Eliminar lugar")
+                                Text("Eliminar viaje")
                             }
                         }
                     }
 
                     if (!isOwner) {
                         Text(
-                            text = "Solo el propietario del viaje puede editar o eliminar este lugar.",
+                            text = "Solo el propietario del viaje puede editar o eliminarlo.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -200,3 +151,5 @@ fun DetailPlaceScreen(
         }
     }
 }
+
+

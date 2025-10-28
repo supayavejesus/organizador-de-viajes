@@ -5,6 +5,8 @@ enum class NavScreens {
     LIST_TRIPS,
     MY_TRAVELS,
     FORM_TRIP,
+    DETAIL_TRIP,
+    EDIT_TRIP,
     PLACES,
     FORM_PLACE,
     DETAIL_PLACE,

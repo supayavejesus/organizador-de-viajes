@@ -32,7 +32,6 @@ fun FormTripScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            // Campo: Nombre
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
@@ -42,7 +41,6 @@ fun FormTripScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Campo: País
             OutlinedTextField(
                 value = pais,
                 onValueChange = { pais = it },
@@ -52,7 +50,6 @@ fun FormTripScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón: Guardar viaje
             Button(
                 onClick = {
                     if (nombre.text.isNotBlank() && pais.text.isNotBlank()) {

@@ -11,7 +11,6 @@ class TripViewModel : ViewModel() {
 
     val listTrip = mutableStateListOf<Trip>()
 
-    // ✅ Obtener todos los viajes
     fun getTrips() {
         viewModelScope.launch {
             try {
@@ -30,26 +29,24 @@ class TripViewModel : ViewModel() {
         }
     }
 
-    // ✅ Obtener viajes por usuario
     fun getTripsByUsername(username: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitInstance.api.getTripsByUsername(username)
-                if (response.isSuccessful) {
-                    response.body()?.let {
-                        listTrip.clear()
-                        listTrip.addAll(it)
-                    }
+                val res = RetrofitInstance.api.getTripsByUsername(username)
+                if (res.isSuccessful) {
+                    listTrip.clear()
+                    listTrip.addAll(res.body() ?: emptyList())
+                    println("Viajes cargados para $username")
                 } else {
-                    println("Error: ${response.code()}")
+                    println("Error al obtener viajes: ${res.code()} ${res.message()}")
                 }
             } catch (e: Exception) {
-                println("Error al conectar con la API: ${e.message}")
+                println("Excepción getTripsByUsername: ${e.message}")
             }
         }
     }
 
-    // ✅ Crear un nuevo viaje
+
     fun createTrips(
         nombre: String,
         pais: String,
@@ -81,7 +78,6 @@ class TripViewModel : ViewModel() {
         }
     }
 
-    // 🆕 Actualizar un viaje
     fun updateTrip(
         id: Int,
         nombre: String,
@@ -112,7 +108,6 @@ class TripViewModel : ViewModel() {
         }
     }
 
-    // 🆕 Eliminar un viaje
     fun deleteTrip(id: Int, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
@@ -130,4 +125,6 @@ class TripViewModel : ViewModel() {
             }
         }
     }
+    fun getTripFromCache(id: Int): Trip? =
+    listTrip.firstOrNull { it.id == id }
 }

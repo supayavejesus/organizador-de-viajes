@@ -34,8 +34,14 @@
         ) {
             val trips = vm.listTrip
 
-            LaunchedEffect(Unit) {
-                vm.getTripsByUsername(username)
+            LaunchedEffect(username) {
+                if (username.isNotBlank()) {
+                    // Normalizamos el nombre a minúsculas
+                    val normalizedUsername = username.trim().lowercase()
+                    vm.getTripsByUsername(normalizedUsername)
+                } else {
+                    vm.getTrips() // fallback: carga todos si no se pasó username
+                }
             }
 
             Scaffold(
@@ -73,7 +79,6 @@
                 }
             ) { padding ->
                 if (trips.isEmpty()) {
-                    // Mensaje cuando no hay viajes del usuario
                     Box(
                         modifier = Modifier
                             .padding(padding)

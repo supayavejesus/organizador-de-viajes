@@ -9,40 +9,29 @@ import kotlinx.coroutines.launch
 
 class PlaceViewModel : ViewModel() {
 
-    val listPlaces = mutableStateListOf<Place>()
+    // 🧍 Nombre del usuario actual (para validaciones y navegación)
+    var currentUserName: String = ""
+        private set
 
-    /* =========================
-       🔹 OBTENER LUGARES
-    ========================= */
-    fun getAllPlaces() {
-        viewModelScope.launch {
-            try {
-                val res = RetrofitInstance.api.getPlacesByTrip(0)
-                if (res.isSuccessful) {
-                    res.body()?.let {
-                        listPlaces.clear()
-                        listPlaces.addAll(it)
-                    }
-                } else {
-                    println("Error getAllPlaces: ${res.code()}")
-                }
-            } catch (e: Exception) {
-                println("Excepción getAllPlaces: ${e.message}")
-            }
-        }
+    fun setCurrentUserName(name: String) {
+        currentUserName = name.trim().lowercase()
+        println("✅ Usuario actual en ViewModel: $currentUserName")
     }
+
+    // 📋 Lista de lugares cargados
+    val listPlaces = mutableStateListOf<Place>()
 
     fun getPlacesByTrip(tripId: Int) {
         viewModelScope.launch {
             try {
                 val res = RetrofitInstance.api.getPlacesByTrip(tripId)
                 if (res.isSuccessful) {
-                    res.body()?.let {
-                        listPlaces.clear()
-                        listPlaces.addAll(it)
-                    }
+                    val lugares = res.body().orEmpty()
+                    listPlaces.clear()
+                    listPlaces.addAll(lugares)
+                    println("Lugares cargados: ${lugares.size}")
                 } else {
-                    println("Error getPlacesByTrip: ${res.code()}")
+                    println("Error getPlacesByTrip: ${res.code()} ${res.message()}")
                 }
             } catch (e: Exception) {
                 println("Excepción getPlacesByTrip: ${e.message}")
@@ -50,9 +39,21 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
-    /* =========================
-       🔹 CREAR LUGAR (mínimo o completo)
-    ========================= */
+    // 🔹 Obtener un lugar por ID
+    fun getPlaceById(id: Int, onResult: (Place?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val res = RetrofitInstance.api.getPlaceById(id)
+                if (res.isSuccessful) onResult(res.body())
+                else onResult(null)
+            } catch (e: Exception) {
+                println("Error getPlaceById: ${e.message}")
+                onResult(null)
+            }
+        }
+    }
+
+    // 🔹 Crear lugar básico
     fun createPlaceBasic(
         nombre: String,
         ciudad: String,
@@ -76,11 +77,12 @@ class PlaceViewModel : ViewModel() {
                 if (res.isSuccessful) {
                     res.body()?.let {
                         listPlaces.add(0, it)
+                        println("Lugar básico creado: ${it.nombre}")
                         onResult(true)
                         return@launch
                     }
                 }
-                println("Error createPlaceBasic: ${res.code()}")
+                println("Error createPlaceBasic: ${res.code()} ${res.message()}")
                 onResult(false)
             } catch (e: Exception) {
                 println("Excepción createPlaceBasic: ${e.message}")
@@ -89,6 +91,7 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
+    // 🔹 Crear lugar completo
     fun createPlace(
         nombre: String,
         ciudad: String,
@@ -117,11 +120,12 @@ class PlaceViewModel : ViewModel() {
                 if (res.isSuccessful) {
                     res.body()?.let {
                         listPlaces.add(0, it)
+                        println("Lugar creado: ${it.nombre}")
                         onResult(true)
                         return@launch
                     }
                 }
-                println("Error createPlace: ${res.code()}")
+                println("Error createPlace: ${res.code()} ${res.message()}")
                 onResult(false)
             } catch (e: Exception) {
                 println("Excepción createPlace: ${e.message}")
@@ -130,9 +134,7 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
-    /* =========================
-       🔹 ACTUALIZAR LUGAR
-    ========================= */
+    // 🔹 Actualizar lugar
     fun updatePlace(
         id: Int,
         tripId: Int,
@@ -163,11 +165,12 @@ class PlaceViewModel : ViewModel() {
                     res.body()?.let { updated ->
                         val idx = listPlaces.indexOfFirst { it.id == id }
                         if (idx >= 0) listPlaces[idx] = updated
+                        println("Lugar actualizado: ${updated.nombre}")
                         onResult(true)
                         return@launch
                     }
                 }
-                println("Error updatePlace: ${res.code()}")
+                println("Error updatePlace: ${res.code()} ${res.message()}")
                 onResult(false)
             } catch (e: Exception) {
                 println("Excepción updatePlace: ${e.message}")
@@ -176,18 +179,17 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
-    /* =========================
-       🔹 ELIMINAR LUGAR
-    ========================= */
+    // 🔹 Eliminar lugar
     fun deletePlace(id: Int, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
                 val res = RetrofitInstance.api.deletePlace(id)
                 if (res.isSuccessful) {
                     listPlaces.removeIf { it.id == id }
+                    println("🗑 Lugar eliminado (ID: $id)")
                     onResult(true)
                 } else {
-                    println("Error deletePlace: ${res.code()}")
+                    println("Error deletePlace: ${res.code()} ${res.message()}")
                     onResult(false)
                 }
             } catch (e: Exception) {
@@ -197,11 +199,7 @@ class PlaceViewModel : ViewModel() {
         }
     }
 
-    /* =========================
-       🧩 OBTENER UN LUGAR DEL CACHE
-       (para editar sin re-llamar API)
-    ========================= */
-    fun getPlaceFromCache(id: Int): Place? {
-        return listPlaces.firstOrNull { it.id == id }
-    }
+    // 🔹 Obtener lugar desde la cache local
+    fun getPlaceFromCache(id: Int): Place? =
+        listPlaces.firstOrNull { it.id == id }
 }
