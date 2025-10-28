@@ -2,7 +2,7 @@ package com.example.organizadordeviajes.data.model
 
 import com.google.gson.annotations.SerializedName
 
-data class Place (
+data class Place(
     val id: Int?,
     @SerializedName("name")
     val nombre: String?,
